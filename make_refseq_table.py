@@ -1,6 +1,4 @@
 import argparse, re, csv, os
-# from Bio import SeqIO
-
 
 def parse_refseq_header(header):
     refseqID, desc = tuple(header.split(' ', 1))
@@ -17,7 +15,7 @@ def parse_refseq_header(header):
 
 
 def load_refseq_db(refseq_fa):
-    # Take refseq SeqIO generator and convert to dictionary
+    # Take refseq fasta headers and convert to dictionary
     db = {}
 
     seqcounter = 0
@@ -81,20 +79,16 @@ input_files = [f for f in os.listdir(args.input_dir) if f.endswith("RefSeq_annot
 input_files = [os.path.join(args.input_dir, f) for f in input_files]
 input_samples = [get_sample_from_name(f) for f in input_files]
 
-# test_m8 = 'test_m8/1344_S1_L001.merged.RefSeq_annotated'
 test_m8_db = {}
 for f, s in zip(input_files, input_samples):
     print "Processing sample: %s" % s
     parse_m8_file(f, test_m8_db)
 test_m8_db = annotate_m8(test_m8_db, refseq_db)
 
-n=0
 fieldnames = ['RefSeqID'] + input_samples + ['org', 'func']
+
 with open(args.output, 'w') as csvfile:
     writer =csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     for k in test_m8_db.keys():
-        # if n < 20:
-        #     print k, test_m8_db[k]
-        #     n+=1
         writer.writerow(test_m8_db[k])
