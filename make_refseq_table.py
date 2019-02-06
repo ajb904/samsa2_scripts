@@ -2,7 +2,8 @@ import argparse, re, csv, os
 from Bio import SeqIO
 
 def get_org(fasta):
-    org = fasta.description.rsplit("[", 1)[1]
+    # org = fasta.description.rsplit("[", 1)[1]
+    org = fasta.rsplit("[", 1)[1]
 
     return org
 
@@ -10,11 +11,16 @@ def get_org(fasta):
 def get_func(fasta):
     # Function is everything between the refseq ID (first word of definition)
     # and the organism (defined by square brackets)
-    func = fasta.description.rsplit("[", 1)[0]
+    # func = fasta.description.rsplit("[", 1)[0]
+    func = fasta.rsplit("[", 1)[0]
     func = func.split(" ", 1)[1]
     func = func.rstrip()
 
     return func
+
+def get_id(fasta):
+    seq_id = fasta.split(" ")[0]
+    return seq_id
 
 
 def clean(annotation, regexp):
@@ -29,13 +35,17 @@ def load_refseq_db(refseq_fa):
 
     seqcounter = 0
 
-    for seq in refseq_fa:
-        seqcounter += 1
-        if seqcounter % 1000000 == 0:
-            print "processed %d sequences" % seqcounter
-        org = clean(get_org(seq), clean_re)
-        func = clean(get_func(seq), clean_re)
-        db[seq.id] = {"org": org, "func": func}
+    # for seq in refseq_fa:
+    for line in open(refseq_fa):
+        if line.startswith(">"):
+            seqcounter += 1
+            if seqcounter % 1000000 == 0:
+                print "processed %d sequences" % seqcounter
+            seq = line[1:]
+            org = clean(get_org(seq), clean_re)
+            func = clean(get_func(seq), clean_re)
+            # db[seq.id] = {"org": org, "func": func}
+            db[get_id(seq)] = {"org": org, "func": func}
 
     return db
 
@@ -80,9 +90,12 @@ parser.add_argument('-i', '--input_dir', help='directory of input m8 files')
 
 args = parser.parse_args()
 
-refseq_db_fasta = SeqIO.parse(args.db, 'fasta')
+# refseq_db_fasta = SeqIO.parse(args.db, 'fasta')
 
-refseq_db = load_refseq_db(refseq_db_fasta)
+
+# refseq_db = load_refseq_db(refseq_db_fasta)
+
+refseq_db = load_refseq_db(args.db)
 
 input_files = [f for f in os.listdir(args.input_dir) if f.endswith("RefSeq_annotated")]
 input_files = [os.path.join(args.input_dir, f) for f in input_files]
