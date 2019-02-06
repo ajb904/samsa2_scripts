@@ -1,12 +1,13 @@
 import argparse, re, csv, os
+import cProfile
 
 def parse_refseq_header(header):
     refseqID, desc = tuple(header.split(' ', 1))
 
     func, org = tuple(desc.rsplit('[', 1))
 
-    func = re.sub('[^a-zA-Z0-9-_*. ]', '', func)
-    org = re.sub('[^a-zA-Z0-9-_*. ]', '', org)
+    #func = re.sub('[^a-zA-Z0-9-_*. ]', '', func)
+    #org = re.sub('[^a-zA-Z0-9-_*. ]', '', org)
 
     func = func.rstrip()
     org = org.rstrip()
@@ -61,34 +62,47 @@ def annotate_m8(m8_dict, refseq_dict):
     return m8_dict
 
 
+def clean_m8_row(row):
+    clean_re = re.compile('[^a-zA-Z0-9-_*. ]')
+
+    row['func'] = re.sub(clean_re, '', row['func'])
+    row['org'] = re.sub(clean_re, '', row['org'])
+
+    return row
+
+
 def get_sample_from_name(filename):
     return os.path.basename(filename).split("_S")[0]
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-d', '--db', help='database file to parse')
-parser.add_argument('-o', '--output', help='output csv file')
-parser.add_argument('-i', '--input_dir', help='directory of input m8 files')
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--db', help='database file to parse')
+    parser.add_argument('-o', '--output', help='output csv file')
+    parser.add_argument('-i', '--input_dir', help='directory of input m8 files')
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
 
-refseq_db = load_refseq_db(args.db)
+    refseq_db = load_refseq_db(args.db)
 
-input_files = [f for f in os.listdir(args.input_dir) if f.endswith("RefSeq_annotated")]
-input_files = [os.path.join(args.input_dir, f) for f in input_files]
-input_samples = [get_sample_from_name(f) for f in input_files]
+    input_files = [f for f in os.listdir(args.input_dir) if f.endswith("RefSeq_annotated")]
+    input_files = [os.path.join(args.input_dir, f) for f in input_files]
+    input_samples = [get_sample_from_name(f) for f in input_files]
 
-test_m8_db = {}
-for f, s in zip(input_files, input_samples):
-    print "Processing sample: %s" % s
-    parse_m8_file(f, test_m8_db)
-test_m8_db = annotate_m8(test_m8_db, refseq_db)
+    test_m8_db = {}
+    for f, s in zip(input_files, input_samples):
+        print "Processing sample: %s" % s
+        parse_m8_file(f, test_m8_db)
+    test_m8_db = annotate_m8(test_m8_db, refseq_db)
 
-fieldnames = ['RefSeqID'] + input_samples + ['org', 'func']
+    fieldnames = ['RefSeqID'] + input_samples + ['org', 'func']
 
-with open(args.output, 'w') as csvfile:
-    writer =csv.DictWriter(csvfile, fieldnames=fieldnames)
-    writer.writeheader()
-    for k in test_m8_db.keys():
-        writer.writerow(test_m8_db[k])
+    with open(args.output, 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for k in test_m8_db.keys():
+            row = clean_m8_row(test_m8_db[k])
+            writer.writerow(row)
+
+main()
