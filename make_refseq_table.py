@@ -10,14 +10,15 @@ def parse_refseq_header(header):
     func = re.sub('[^a-zA-Z0-9-_*. ]', '', func)
     org = re.sub('[^a-zA-Z0-9-_*. ]', '', org)
 
+    func = func.rstrip()
+    org = org.rstrip()
+
     return refseqID, func, org
 
 
 def load_refseq_db(refseq_fa):
     # Take refseq SeqIO generator and convert to dictionary
     db = {}
-
-    # clean_re = re.compile('[^a-zA-Z0-9-_*. ]')
 
     seqcounter = 0
 
