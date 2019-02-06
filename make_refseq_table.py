@@ -1,63 +1,33 @@
 import argparse, re, csv, os
-from Bio import SeqIO
-
-# def get_org(fasta):
-#     # org = fasta.description.rsplit("[", 1)[1]
-#     org = fasta.rsplit("[", 1)[1]
-#
-#     return org
-#
-#
-# def get_func(fasta):
-#     # Function is everything between the refseq ID (first word of definition)
-#     # and the organism (defined by square brackets)
-#     # func = fasta.description.rsplit("[", 1)[0]
-#     func = fasta.rsplit("[", 1)[0]
-#     func = func.split(" ", 1)[1]
-#     func = func.rstrip()
-#
-#     return func
-#
-# def get_id(fasta):
-#     seq_id = fasta.split(" ")[0]
-#     return seq_id
+# from Bio import SeqIO
 
 
-def parse_refseq_header(header, clean_re):
+def parse_refseq_header(header):
     refseqID, desc = tuple(header.split(' ', 1))
 
     func, org = tuple(desc.rsplit('[', 1))
 
-    func = re.sub(clean_re, '', func)
-    org = re.sub(clean_re, '', org)
+    func = re.sub('[^a-zA-Z0-9-_*. ]', '', func)
+    org = re.sub('[^a-zA-Z0-9-_*. ]', '', org)
 
     return refseqID, func, org
-
-
-# def clean(annotation, regexp):
-#     return re.sub(regexp, '', annotation)
 
 
 def load_refseq_db(refseq_fa):
     # Take refseq SeqIO generator and convert to dictionary
     db = {}
 
-    clean_re = re.compile('[^a-zA-Z0-9-_*. ]')
+    # clean_re = re.compile('[^a-zA-Z0-9-_*. ]')
 
     seqcounter = 0
 
-    # for seq in refseq_fa:
     for line in open(refseq_fa):
         if line.startswith(">"):
             seqcounter += 1
             if seqcounter % 1000000 == 0:
                 print "processed %d sequences" % seqcounter
-            refseqID, func, org = parse_refseq_header(line[1:], clean_re)
-            # seq = line[1:]
-            # org = clean(get_org(seq), clean_re)
-            # func = clean(get_func(seq), clean_re)
-            # db[seq.id] = {"org": org, "func": func}
-            # db[get_id(seq)] = {"org": org, "func": func}
+            refseqID, func, org = parse_refseq_header(line[1:])
+
             db[refseqID] = {"org": org, "func": func}
 
     return db
@@ -103,10 +73,6 @@ parser.add_argument('-i', '--input_dir', help='directory of input m8 files')
 
 args = parser.parse_args()
 
-# refseq_db_fasta = SeqIO.parse(args.db, 'fasta')
-
-
-# refseq_db = load_refseq_db(refseq_db_fasta)
 
 refseq_db = load_refseq_db(args.db)
 
@@ -127,16 +93,7 @@ with open(args.output, 'w') as csvfile:
     writer =csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     for k in test_m8_db.keys():
-        if n < 20:
-            print k, test_m8_db[k]
-            n+=1
+        # if n < 20:
+        #     print k, test_m8_db[k]
+        #     n+=1
         writer.writerow(test_m8_db[k])
-
-
-# outfile = open(args.output, 'w')
-
-# for seq in db_fasta:
-#     if org[0].isdigit():
-#         print seq.description
-#     outfile.write('%s,%s,%s\n' % (seq.id,org,func))
-# outfile.close()
