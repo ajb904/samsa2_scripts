@@ -27,7 +27,12 @@ def load_refseq_db(refseq_fa):
 
     clean_re = re.compile('[^a-zA-Z0-9-_*. ]')
 
+    seqcounter = 0
+
     for seq in refseq_fa:
+        seqcounter += 1
+        if seqcounter % 1000000 == 0:
+            print "processed %d sequences" % seqcounter
         org = clean(get_org(seq), clean_re)
         func = clean(get_func(seq), clean_re)
         db[seq.id] = {"org": org, "func": func}
@@ -80,13 +85,13 @@ refseq_db_fasta = SeqIO.parse(args.db, 'fasta')
 refseq_db = load_refseq_db(refseq_db_fasta)
 
 input_files = [f for f in os.listdir(args.input_dir) if f.endswith("RefSeq_annotated")]
-print input_files
 input_files = [os.path.join(args.input_dir, f) for f in input_files]
 input_samples = [get_sample_from_name(f) for f in input_files]
 
 # test_m8 = 'test_m8/1344_S1_L001.merged.RefSeq_annotated'
 test_m8_db = {}
-for f in input_files:
+for f, s in zip(input_files, input_samples):
+    print "Processing sample: %s" % s
     parse_m8_file(f, test_m8_db)
 test_m8_db = annotate_m8(test_m8_db, refseq_db)
 
